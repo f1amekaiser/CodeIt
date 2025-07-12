@@ -3,7 +3,9 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 
+app.use(cors());
 app.use(express.json());
 const filepath = path.join(__dirname, 'code.py');
 
