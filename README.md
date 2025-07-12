@@ -1,1 +1,1 @@
-## Explore the 'React' folder for details.
+Explore the 'React' folder for details.
