@@ -10,7 +10,7 @@ function App() {
   const [output, setOutput] = useState('>');
 
  const runCode = () => {
-  fetch('/api/run', {
+  fetch('https://codeit-ervv.onrender.com/api/run', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
