@@ -1,0 +1,11 @@
+/node_modules/
+/client/node_modules/
+/server/node_modules/
+code.py
+*.pyc
+.DS_Store
+.env
+build/
+dist/
+client/build/
+client/dist/

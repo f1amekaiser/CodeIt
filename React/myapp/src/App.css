@@ -1,0 +1,84 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  font: Brush Script MT, cursive;
+  font-weight: bold;
+  font-style: italic;
+  font-family: cursive;
+  font-size: 16px;
+  color: #ccc;
+  background-color: #1c1b1b;
+  padding: 1rem;
+  border-right: 1px solid black;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  gap: 10px;
+  padding: 1rem;
+  background-color: #2d2b2b;
+  border-bottom: 1px solid black;
+}
+
+.btn {
+  padding: 6px 12px;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+}
+
+.editor {
+  flex: 1;
+  padding: 1rem;
+  background-color: #1c1b1b;
+}
+
+.editor textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  background-color: #000;
+  color: #ccc;
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 16px;
+  border: 1px solid #121212;
+  border-radius: 6px;
+}
+
+.output {
+  padding: 1rem;
+  border-top: 1px solid #1c1b1b;
+  background-color: #1c1b1b;
+  color: #ccc;
+}
+
+.output-box {
+  background: #000;
+  color: #0f0;
+  padding: 1rem;
+  font-family: monospace;
+  border-radius: 4px;
+  min-height: 80px;
+}
