@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
-import Editor from './components/Editor';
+import CodeEditor from './components/codeEditor';
 import Output from './components/Output';
 import './App.css';
 
@@ -31,7 +31,7 @@ function App() {
       <Sidebar />
       <main className="main-content">
         <Topbar onRun={runCode} onClear={clearCode} />
-        <Editor code={code} setCode={setCode} />
+        <CodeEditor code={code} setCode={setCode} />
         <Output output={output} />
       </main>
     </div>
