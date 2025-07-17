@@ -66,17 +66,30 @@ body {
 }
 
 .output {
-  padding: 1rem;
-  border-top: 1px solid #1c1b1b;
-  background-color: #1c1b1b;
-  color: #ccc;
+  height:50vh;
+  background-color: #111;
+  color: white;
+  border-top: 1px solid black;
+  padding: 15px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .output-box {
-  background: #000;
+  height: calc(100% - 1.5em);
   color: #0f0;
-  padding: 1rem;
-  font-family: monospace;
+  overflow-y: auto;
+  padding: 10px;
+  background: black;
   border-radius: 4px;
-  min-height: 80px;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 550px;
 }

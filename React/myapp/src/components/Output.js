@@ -1,7 +1,7 @@
 function Output({ output }) {
   return (
     <section className="output">
-      <h3>Output:</h3>
+      <h4>Console:</h4>
       <div className="output-box">
         {output}
       </div>

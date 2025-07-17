@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 const filepath = path.join(__dirname, 'code.py');
 
-app.post('/api/run', (req, res) => {
+/*app.post('/api/run', (req, res) => {
     const code = req.body.code;
     if(!code) {
         return res.status(400).send('No code provided');
@@ -18,6 +18,23 @@ app.post('/api/run', (req, res) => {
     fs.writeFileSync(filepath, code, 'utf8');
     
     exec(`python "${filepath}"`, (err, stdout, stderr) => {
+        if(err) {
+            return res.status(500).send(`Error: ${err.message}`);
+        }
+        if(stderr) {
+            return res.status(500).send(`Error: ${stderr}`);
+        }
+        res.send(`> ${stdout}`);
+    })
+})*/
+
+app.post('/api/load', (req, res) => {
+    const name = req.body.message;
+    if(!name) {
+        return res.status(400).send('No name provided');
+    }
+    
+    exec(`pip install ${name}`, (err, stdout, stderr) => {
         if(err) {
             return res.status(500).send(`Error: ${err.message}`);
         }
