@@ -49,7 +49,7 @@ function App() {
 
     setOutput('Loading...');
 
-    fetch('/api/load', {
+    fetch('https://codeit-ervv.onrender.com/api/load', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
