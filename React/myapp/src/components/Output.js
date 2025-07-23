@@ -1,9 +1,9 @@
 function Output({ output }) {
   return (
     <section className="output">
-      <h4>Console:</h4>
-      <div className="output-box">
-        {output}
+      <h3>Console:</h3>
+      <div contentEditable="false" id="output" className="output-box">
+          {output}
       </div>
     </section>
   );

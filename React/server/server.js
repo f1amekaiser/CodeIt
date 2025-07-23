@@ -1,13 +1,42 @@
 const {exec} = require('child_process');
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const app = express();
-const fs = require('fs');
-const path = require('path');
+//const fs = require('fs');
+//const path = require('path');
 const cors = require('cors');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: 'http://localhost:3000',
+        methods: ['GET', 'POST'], }
+});
+
+const roomCodeMap = new Map();
+
+io.on('connection', (socket) => {
+    let sid = socket.id;
+
+    socket.on('join', (data) => {
+        sid = data.toString();
+        socket.join(sid);
+        console.log(`joined ${sid}`);
+
+        const existingCode = roomCodeMap.get(sid);
+        if(existingCode) {
+            socket.emit('change', existingCode);
+        }
+    })
+    socket.on('code', (code) => {
+        roomCodeMap.set(sid, code);
+        socket.to(sid).emit('change', code);
+    })
+})
 
 app.use(cors());
 app.use(express.json());
-const filepath = path.join(__dirname, 'code.py');
+//const filepath = path.join(__dirname, 'code.py');
 
 /*app.post('/api/run', (req, res) => {
     const code = req.body.code;
@@ -45,6 +74,6 @@ app.post('/api/load', (req, res) => {
     })
 })
 
-app.listen(5000, () => {
+server.listen(5000, () => {
     console.log('Server is running on http://localhost:5000');
 });
