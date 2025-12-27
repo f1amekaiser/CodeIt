@@ -171,15 +171,13 @@ function runPythonCode(socket, socketId, code, filename) {
   proc.stderr.on("data", (d) => socket.emit("terminal-output", d.toString()));
 
   proc.on("close", (code) => {
-    clearTimeout(timeout);
-    cleanup(socketId);
+    cleanup(socketId); // cleanup already clears timeout safely
     socket.emit("terminal-output", `\n[Process exited with code ${code}]\n`);
     socket.emit("process-ended");
   });
 
   proc.on("error", (err) => {
-    clearTimeout(timeout);
-    cleanup(socketId);
+    cleanup(socketId); // cleanup already clears timeout safely
     socket.emit("terminal-output", `\nError: ${err.message}\n`);
     socket.emit("process-ended");
   });
