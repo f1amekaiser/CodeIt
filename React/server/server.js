@@ -106,6 +106,27 @@ io.on("connection", (socket) => {
 /* =======================
    PYTHON EXECUTION (SAFE)
 ======================= */
+function resetIdleTimeout(socket, socketId) {
+  const info = activeProcesses.get(socketId);
+  if (!info) return;
+
+  if (info.timeout) clearTimeout(info.timeout);
+
+  info.timeout = setTimeout(() => {
+    try {
+      info.process.kill("SIGKILL");
+    } catch {}
+
+    socket.emit(
+      "terminal-output",
+      "\n⏱ Program terminated due to inactivity (30s idle)\n"
+    );
+
+    cleanup(socketId);
+    socket.emit("process-ended");
+  }, EXECUTION_TIMEOUT_MS);
+}
+
 function runPythonCode(socket, socketId, code, filename) {
   killProcess(socketId);
 
@@ -131,10 +152,14 @@ function runPythonCode(socket, socketId, code, filename) {
     },
   });
 
-  const timeout = setTimeout(() => {
-    proc.kill("SIGKILL");
-    socket.emit("terminal-output", "\n⏱ Execution timed out (3s limit)\n");
-  }, EXECUTION_TIMEOUT_MS);
+  activeProcesses.set(socketId, {
+    process: proc,
+    tempDir: sessionDir,
+    timeout: null,
+  });
+
+  // start idle timer
+  resetIdleTimeout(socket, socketId);
 
   activeProcesses.set(socketId, {
     process: proc,
