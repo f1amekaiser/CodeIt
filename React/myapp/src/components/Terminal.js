@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import "./Terminal.css";
 
 function Terminal({ socket, isRunning, onRunCommand }) {
-  const [lines, setLines] = useState([{ type: "prompt", content: ">>> " }]);
+  const [lines, setLines] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [commandHistory, setCommandHistory] = useState([]);
@@ -20,7 +20,7 @@ function Terminal({ socket, isRunning, onRunCommand }) {
         const outputLines = output.split("\n");
         outputLines.forEach((line, idx) => {
           if (idx === outputLines.length - 1 && line === ">>> ") {
-            newLines.push({ type: "prompt", content: line });
+            newLines.push();
           } else if (line) {
             newLines.push({ type: "output", content: line });
           } else if (idx < outputLines.length - 1) {
@@ -76,7 +76,7 @@ function Terminal({ socket, isRunning, onRunCommand }) {
         setLines((prev) => [...prev, { type: "input", content: inputValue }]);
         socket?.emit("terminal-input", inputValue);
       } else if (command === "clear" || command === "cls") {
-        setLines([{ type: "prompt", content: ">>> " }]);
+        setLines([]);
       } else if (command === "help") {
         setLines((prev) => [
           ...prev,
@@ -184,11 +184,7 @@ function Terminal({ socket, isRunning, onRunCommand }) {
   return (
     <div className="terminal-container" onClick={handleTerminalClick}>
       <div className="terminal-header">
-        <div className="terminal-dots">
-          <span className="dot red"></span>
-          <span className="dot yellow"></span>
-          <span className="dot green"></span>
-        </div>
+        <div className="terminal-dots"></div>
         <span className="terminal-title">CodeIt Terminal</span>
         <div className="terminal-status">
           {isRunning && (

@@ -240,7 +240,7 @@ function App() {
       return;
     }
 
-    fetch(`${API_URL}/api/load`, {
+    /* fetch(`${API_URL}/api/load`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -253,7 +253,10 @@ function App() {
         alert(data);
       })
       .catch((error) => alert(`Error: ${error.message}`));
+    setSearchTerm(""); */
+    alert("Install feature is not available yet");
     setSearchTerm("");
+    return;
   };
 
   // Room handlers
