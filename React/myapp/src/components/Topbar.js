@@ -38,7 +38,7 @@ function Topbar({
             </>
           )}
         </button>
-        <button className="action-btn" onClick={onClear} title="Clear editor">
+        <button className="clear-btn" onClick={onClear} title="Clear editor">
           <span className="btn-icon">🗑</span>
           Clear
         </button>

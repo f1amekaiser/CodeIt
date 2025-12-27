@@ -81,14 +81,37 @@
   }
 }
 
+.clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 40px;
+  width: 80px;
+  padding: 0 16px;
+  gap: 8px;
+
+  border-radius: 10px;
+  border: 2px solid #3a3a45;
+  background: transparent;
+
+  color: #c9c9d4;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 /* Action Button */
 .action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  height: 40px; /* lock height */
-  padding: 0 16px; /* vertical padding removed */
+  height: 40px;
+  padding: 0 16px;
   gap: 6px;
 
   border-radius: 10px;
@@ -98,7 +121,7 @@
   color: #c9c9d4;
   font-size: 0.85rem;
   font-weight: 500;
-  line-height: 1; /* THIS fixes text overflow */
+  line-height: 1;
 
   cursor: pointer;
   transition: all 0.2s ease;
