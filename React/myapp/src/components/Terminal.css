@@ -1,0 +1,202 @@
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0d0d0d;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid #2a2a2a;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #2d2d2d, #252525);
+  border-bottom: 1px solid #3a3a3a;
+  gap: 12px;
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot.red {
+  background: linear-gradient(135deg, #ff5f56, #ff3b30);
+  box-shadow: 0 2px 4px rgba(255, 59, 48, 0.4);
+}
+
+.dot.yellow {
+  background: linear-gradient(135deg, #ffbd2e, #ff9f0a);
+  box-shadow: 0 2px 4px rgba(255, 159, 10, 0.4);
+}
+
+.dot.green {
+  background: linear-gradient(135deg, #27c93f, #30d158);
+  box-shadow: 0 2px 4px rgba(48, 209, 88, 0.4);
+}
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  color: #888;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.terminal-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-running {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #30d158;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: rgba(48, 209, 88, 0.15);
+  border-radius: 20px;
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  background: #30d158;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.terminal-body {
+  flex: 1;
+  padding: 14px;
+  font-family: "JetBrains Mono", "Fira Code", "Monaco", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: #e0e0e0;
+}
+
+.terminal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-body::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.terminal-body::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+
+.terminal-body::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+.terminal-line {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 1.6em;
+}
+
+.terminal-line.prompt {
+  color: #3cb371;
+  font-weight: 600;
+}
+
+.terminal-line.command {
+  color: #fff;
+}
+
+.terminal-line.output {
+  color: #c9c9c9;
+}
+
+.terminal-line.error {
+  color: #ff6b6b;
+}
+
+.terminal-line.input {
+  color: #64b5f6;
+}
+
+.terminal-input-form {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.terminal-prompt {
+  color: #3cb371;
+  font-weight: 600;
+  white-space: pre;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: #3cb371;
+  padding: 0;
+}
+
+.terminal-input::selection {
+  background: rgba(60, 179, 113, 0.3);
+}
+
+/* Cursor animation */
+.terminal-input:focus {
+  animation: cursor-blink 1s step-start infinite;
+}
+
+@keyframes cursor-blink {
+  50% {
+    caret-color: transparent;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .terminal-body {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .terminal-header {
+    padding: 8px 12px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+}

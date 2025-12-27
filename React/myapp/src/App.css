@@ -1,122 +1,178 @@
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  background: #111118;
+  color: #e0e0e0;
 }
 
-.container {
+/* App Container */
+.app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
-.sidebar {
-  width: 200px;
-  height: 100%;
-  font-family: Times New Roman, serif;
-  font-weight: bold;
-  font-size: 16px;
-  color: #ccc;
-  background-color: #1c1b1b;
-  padding: 1rem;
-  border-right: 1px solid black;
-}
-
+/* Main Content Area */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-.topbar {
-  display: flex;
-  gap: 10px;
-  padding: 1rem;
-  background-color: #2d2b2b;
-  border-bottom: 1px solid black;
-}
-
-.btn {
-  padding: 6px 12px;
-  background-color: mediumseagreen;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.splbtn {
-  padding: 6px 12px;
-  background-color: #2d2b2b;
-  border-style: solid;
-  border-width: 2px;
-  color: mediumseagreen;
-  border-color: mediumseagreen;
-  border-radius: 4px;
-}
-
-.splbtn:hover {
-  background-color: dimgrey;
-}
-
-.editor {
-  flex: 1;
-  padding: 1rem;
-  background-color: #1c1b1b;
-}
-
-.editor textarea {
-  width: 100%;
-  height: 100%;
-  resize: none;
-  background-color: #000;
-  color: #ccc;
-  padding: 1rem;
-  font-family: monospace;
-  font-size: 16px;
-  border: 1px solid #121212;
-  border-radius: 6px;
-}
-
-.output {
-  height:45vh;
-  background-color: #111;
-  color: white;
-  border-top: 1px solid black;
-  padding: 15px;
-  box-sizing: border-box;
   overflow: hidden;
+  background: linear-gradient(180deg, #1a1a24, #15151f);
 }
 
-.output-box {
-  height: calc(100% - 1.5em);
-  width: 100%;
-  color: #0f0;
-  overflow-y: auto;
-  padding: 10px;
-  background: black;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-family: monospace;
-  font-size: 14px;
+/* Editor and Terminal Container */
+.editor-terminal-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
 }
 
-.search-container {
+.editor-section {
+  flex: 1;
+  min-height: 300px;
+  overflow: hidden;
+  border-bottom: 1px solid #2a2a35;
+}
+
+.terminal-section {
+  height: 280px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow: hidden;
+  padding: 12px;
+  background: #111118;
+}
+
+/* Loading Screen */
+.loading-screen {
   display: flex;
   align-items: center;
-  margin-left: auto;
-  margin-right: 250px;
-  gap: 5px;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
-.search-input {
-  color: whitesmoke;
-  background-color: #2d2b2b;
-  height: 25px;
-  border-style: solid;
-  border-width: 1px;
-  border-color: whitesmoke;
+.loading-content {
+  text-align: center;
 }
 
-.join-container {
-  display: flex;
-  gap: 5px;
+.loading-logo {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3cb371, #2ed573);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 30px;
+}
+
+.loading-screen .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(60, 179, 113, 0.2);
+  border-top-color: #3cb371;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Monaco Editor Override */
+.editor-section .monaco-editor {
+  border-radius: 0 !important;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a24;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a45;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a55;
+}
+
+/* Selection Color */
+::selection {
+  background: rgba(60, 179, 113, 0.3);
+  color: #fff;
+}
+
+/* Focus Outline */
+:focus-visible {
+  outline: 2px solid rgba(60, 179, 113, 0.5);
+  outline-offset: 2px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .editor-section {
+    min-height: 250px;
+  }
+
+  .terminal-section {
+    height: 200px;
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.editor-section,
+.terminal-section {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Utility Classes */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

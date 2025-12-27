@@ -1,0 +1,250 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, #252530, #1e1e28);
+  border-bottom: 1px solid #2a2a35;
+  gap: 20px;
+}
+
+.topbar-left,
+.topbar-center,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-left {
+  flex: 1;
+}
+
+.topbar-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.topbar-right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Run Button */
+.run-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #3cb371, #2ed573);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(60, 179, 113, 0.3);
+}
+
+.run-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(60, 179, 113, 0.4);
+}
+
+.run-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.run-btn.running {
+  background: linear-gradient(135deg, #ff9f43, #ee5a24);
+  box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+}
+
+.run-icon {
+  font-size: 0.85rem;
+}
+
+.run-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Action Button */
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2px solid #3a3a45;
+  background: transparent;
+  color: #c9c9d4;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  border-color: #555;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-icon {
+  font-size: 0.9rem;
+}
+
+/* Current File Display */
+.current-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(60, 179, 113, 0.1);
+  border-radius: 8px;
+  margin-left: 10px;
+}
+
+.file-label {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.current-file .file-name {
+  color: #3cb371;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Module Search */
+.module-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid #3a3a45;
+  background: #1a1a24;
+  color: #fff;
+  font-size: 0.85rem;
+  width: 180px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #3cb371;
+  box-shadow: 0 0 0 3px rgba(60, 179, 113, 0.1);
+}
+
+.search-input::placeholder {
+  color: #555;
+}
+
+.install-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2px solid #4a9ecd;
+  background: rgba(74, 158, 205, 0.1);
+  color: #4a9ecd;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.install-btn:hover {
+  background: rgba(74, 158, 205, 0.2);
+}
+
+/* Room Info */
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.room-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3cb371;
+  box-shadow: 0 0 8px rgba(60, 179, 113, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.room-name {
+  color: #c9c9d4;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Room Button */
+.room-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2px solid #9b59b6;
+  background: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.room-btn:hover {
+  background: rgba(155, 89, 182, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .topbar {
+    flex-wrap: wrap;
+    padding: 10px 15px;
+  }
+
+  .topbar-center {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
+  .current-file {
+    display: none;
+  }
+}
