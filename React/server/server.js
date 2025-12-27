@@ -19,7 +19,7 @@ const server = http.createServer(app);
 /* =======================
    SECURITY LIMITS
 ======================= */
-const EXECUTION_TIMEOUT_MS = 3000; // 3s wall time
+const EXECUTION_TIMEOUT_MS = 30000; // 30s wall time
 const MAX_CPU_SECONDS = 2; // CPU time
 const MAX_MEMORY_KB = 256 * 1024; // 256MB RAM
 
