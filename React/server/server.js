@@ -164,7 +164,7 @@ function runPythonCode(socket, socketId, code, filename) {
   activeProcesses.set(socketId, {
     process: proc,
     tempDir: sessionDir,
-    timeout,
+    timeout: null,
   });
 
   proc.stdout.on("data", (d) => socket.emit("terminal-output", d.toString()));
