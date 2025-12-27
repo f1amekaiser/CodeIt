@@ -150,6 +150,8 @@
 .new-file-form input,
 .edit-file-form input {
   flex: 1;
+  max-width: 160px; /* 👈 key fix */
+  min-width: 0;
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid #3a3a45;

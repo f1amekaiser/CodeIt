@@ -22,7 +22,8 @@
 
 .topbar-center {
   flex: 1;
-  justify-content: center;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .topbar-right {
@@ -35,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   padding: 10px 20px;
   border-radius: 10px;
   border: none;
@@ -85,9 +87,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
-  height: 40px;              /* lock height */
-  padding: 0 16px;           /* vertical padding removed */
+  height: 40px; /* lock height */
+  padding: 0 16px; /* vertical padding removed */
   gap: 6px;
 
   border-radius: 10px;
@@ -97,12 +100,11 @@
   color: #c9c9d4;
   font-size: 0.85rem;
   font-weight: 500;
-  line-height: 1;            /* THIS fixes text overflow */
+  line-height: 1; /* THIS fixes text overflow */
 
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 
 .action-btn:hover {
   border-color: #555;
@@ -130,6 +132,10 @@
 }
 
 .current-file .file-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #3cb371;
   font-size: 0.85rem;
   font-weight: 600;
