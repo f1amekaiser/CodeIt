@@ -108,13 +108,17 @@ io.on("connection", (socket) => {
 ======================= */
 function resetIdleTimeout(socket, socketId) {
   const info = activeProcesses.get(socketId);
-  if (!info) return;
+  if (!info || !info.active) return;
 
   if (info.timeout) clearTimeout(info.timeout);
 
   info.timeout = setTimeout(() => {
+    const current = activeProcesses.get(socketId);
+
+    if (!current || !current.active) return;
+
     try {
-      info.process.kill("SIGKILL");
+      current.process.kill("SIGKILL");
     } catch {}
 
     socket.emit(
@@ -165,19 +169,28 @@ function runPythonCode(socket, socketId, code, filename) {
     process: proc,
     tempDir: sessionDir,
     timeout: null,
+    active: true,
   });
 
   proc.stdout.on("data", (d) => socket.emit("terminal-output", d.toString()));
   proc.stderr.on("data", (d) => socket.emit("terminal-output", d.toString()));
 
   proc.on("close", (code) => {
-    cleanup(socketId); // cleanup already clears timeout safely
+    const info = activeProcesses.get(socketId);
+    if (info) info.active = false;
+
+    cleanup(socketId);
+
     socket.emit("terminal-output", `\n[Process exited with code ${code}]\n`);
     socket.emit("process-ended");
   });
 
   proc.on("error", (err) => {
-    cleanup(socketId); // cleanup already clears timeout safely
+    const info = activeProcesses.get(socketId);
+    if (info) info.active = false;
+
+    cleanup(socketId);
+
     socket.emit("terminal-output", `\nError: ${err.message}\n`);
     socket.emit("process-ended");
   });
@@ -189,16 +202,29 @@ function runPythonCode(socket, socketId, code, filename) {
 function killProcess(socketId) {
   const info = activeProcesses.get(socketId);
   if (!info) return;
+
+  info.active = false;
+
   try {
-    clearTimeout(info.timeout);
     info.process.kill("SIGKILL");
   } catch {}
+
   cleanup(socketId);
 }
 
 function cleanup(socketId) {
   const info = activeProcesses.get(socketId);
-  if (info?.tempDir) fs.rmSync(info.tempDir, { recursive: true, force: true });
+  if (!info) return;
+
+  if (info.timeout) {
+    clearTimeout(info.timeout);
+    info.timeout = null;
+  }
+
+  if (info.tempDir && fs.existsSync(info.tempDir)) {
+    fs.rmSync(info.tempDir, { recursive: true, force: true });
+  }
+
   activeProcesses.delete(socketId);
 }
 
