@@ -66,7 +66,7 @@ function Topbar({
             onClick={onSearch}
             title="Install Python package"
           >
-            📦 Install
+            Install
           </button>
         </div>
       </div>
@@ -79,7 +79,6 @@ function Topbar({
           </div>
         ) : null}
         <button className="room-btn" onClick={onOpenRoomModal}>
-          <span className="btn-icon">👥</span>
           {currentRoom ? "Switch Room" : "Join Room"}
         </button>
       </div>
