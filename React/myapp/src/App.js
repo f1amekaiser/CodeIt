@@ -5,6 +5,8 @@ import CodeEditor from "./components/codeEditor";
 import Terminal from "./components/Terminal";
 import AuthPage from "./components/AuthPage";
 import RoomModal from "./components/RoomModal";
+import RoomManagement from "./components/RoomManagement";
+import LabelManager from "./components/LabelManager";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -20,6 +22,10 @@ function App() {
   // Room state
   const [currentRoom, setCurrentRoom] = useState(null);
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
+  const [roomPermissions, setRoomPermissions] = useState({ role: null, canEdit: true });
+  const [labels, setLabels] = useState([]);
+  const [isLabelManagerOpen, setIsLabelManagerOpen] = useState(false);
 
   // File management state (session-based, no persistence)
   const [files, setFiles] = useState([
@@ -42,6 +48,7 @@ function App() {
 
   // Socket reference
   const socketRef = useRef(null);
+  const editorRef = useRef(null);
 
   // Initialize socket connection
   useEffect(() => {
@@ -54,22 +61,36 @@ function App() {
         console.log("Connected to server");
       });
 
-      socketRef.current.on("code-sync", (newCode) => {
+      socketRef.current.on("code-sync", (payload) => {
+        const newCode = typeof payload === "string" ? payload : payload.code;
+        const filename = typeof payload === "string" ? activeFile : payload.filename;
+        if (filename && filename !== activeFile) return;
         setCode(newCode);
         // Update the active file content
         setFiles((prev) =>
           prev.map((f) =>
-            f.name === activeFile ? { ...f, content: newCode } : f
+            f.name === filename ? { ...f, content: newCode } : f
           )
         );
       });
 
       socketRef.current.on("room-joined", (data) => {
         setCurrentRoom(data.roomName);
+        setRoomPermissions({ role: data.role, canEdit: data.canEdit });
+        fetch(`${API_URL}/api/rooms/${data.roomName}/labels`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((res) => res.ok ? res.json() : { labels: [] }).then((body) => setLabels(body.labels || []));
       });
 
       socketRef.current.on("room-error", (data) => {
         alert(data.error);
+      });
+
+      socketRef.current.on("label-saved", (label) => {
+        setLabels((previous) => [
+          ...previous.filter((item) => item.label !== label.label),
+          label,
+        ].sort((a, b) => a.label.localeCompare(b.label)));
       });
 
       socketRef.current.on("process-ended", () => {
@@ -178,15 +199,16 @@ function App() {
   // Code editor change handler
   const handleCodeChange = useCallback(
     (newCode) => {
+      if (currentRoom && !roomPermissions.canEdit) return;
       setCode(newCode);
       setFiles((prev) =>
         prev.map((f) =>
           f.name === activeFile ? { ...f, content: newCode } : f
         )
       );
-      socketRef.current?.emit("code-update", newCode);
+      socketRef.current?.emit("code-update", { code: newCode, filename: activeFile });
     },
-    [activeFile]
+    [activeFile, currentRoom, roomPermissions.canEdit]
   );
 
   // Run code handler
@@ -264,6 +286,34 @@ function App() {
     setCurrentRoom(room.name);
   };
 
+  const saveLabel = (label, startLine, endLine) => {
+    if (!activeFile || !currentRoom) return;
+    const selectedCode = code.split("\n").slice(startLine - 1, endLine).join("\n");
+    socketRef.current?.emit("save-label", {
+      label, filename: activeFile, startLine, endLine, code: selectedCode,
+    });
+  };
+
+  const deleteLabel = async (label) => {
+    const response = await fetch(
+      `${API_URL}/api/rooms/${encodeURIComponent(currentRoom)}/labels/${encodeURIComponent(label)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Could not remove label");
+    setLabels((previous) => previous.filter((item) => item.label !== label));
+  };
+
+  const useLabel = (label) => {
+    const saved = labels.find((item) => item.label === label);
+    if (!saved) return;
+    const cursorLine = editorRef.current?.getPosition()?.lineNumber || code.split("\n").length;
+    const lines = code.split("\n");
+    lines.splice(cursorLine - 1, 0, ...saved.code.split("\n"));
+    const nextCode = lines.join("\n");
+    handleCodeChange(nextCode);
+  };
+
   const handleRoomCreate = (room) => {
     setCurrentRoom(room.name);
   };
@@ -307,9 +357,16 @@ function App() {
           setTerm={setSearchTerm}
           onSearch={handleInstallPackage}
           onOpenRoomModal={() => setIsRoomModalOpen(true)}
+          onManageRoom={() => setIsRoomManagementOpen(true)}
+          onManageLabels={() => setIsLabelManagerOpen(true)}
           currentRoom={currentRoom}
           activeFile={activeFile}
           isRunning={isRunning}
+          canEdit={roomPermissions.canEdit}
+          labels={labels}
+          onSaveLabel={saveLabel}
+          onUseLabel={useLabel}
+          onDeleteLabel={deleteLabel}
         />
         <div className="editor-terminal-container">
           <div className="editor-section">
@@ -317,6 +374,8 @@ function App() {
               code={code}
               setCode={handleCodeChange}
               socket={socketRef}
+              readOnly={Boolean(currentRoom && !roomPermissions.canEdit)}
+              onMount={(editor) => { editorRef.current = editor; }}
             />
           </div>
           <div className="terminal-section">
@@ -337,6 +396,30 @@ function App() {
         socket={socketRef.current}
         token={token}
       />
+      {currentRoom && (
+        <RoomManagement
+          isOpen={isRoomManagementOpen}
+          onClose={() => setIsRoomManagementOpen(false)}
+          roomName={currentRoom}
+          token={token}
+          permissions={roomPermissions}
+          onRoomDeleted={() => {
+            socketRef.current?.disconnect();
+            setCurrentRoom(null);
+            setRoomPermissions({ role: null, canEdit: true });
+          }}
+        />
+      )}
+      {currentRoom && (
+        <LabelManager
+          isOpen={isLabelManagerOpen}
+          onClose={() => setIsLabelManagerOpen(false)}
+          labels={labels}
+          canEdit={roomPermissions.canEdit}
+          onSaveLabel={saveLabel}
+          onDeleteLabel={deleteLabel}
+        />
+      )}
     </div>
   );
 }

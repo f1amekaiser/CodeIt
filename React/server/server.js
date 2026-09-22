@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken");
 
 const { pool, initDB } = require("./db");
 const { router: authRouter, authenticateToken } = require("./auth");
-const roomsRouter = require("./rooms");
+const { router: roomsRouter, getMembership } = require("./rooms");
 
 const app = express();
 const server = http.createServer(app);
@@ -47,7 +47,16 @@ fs.mkdirSync(tempRoot, { recursive: true });
 ======================= */
 io.on("connection", (socket) => {
   let currentRoom = null;
+  let currentUser = null;
+  let currentMembership = null;
   const socketId = socket.id;
+
+  const refreshMembership = async () => {
+    if (currentRoom && currentUser) {
+      currentMembership = await getMembership(currentRoom, currentUser.id);
+    }
+    return currentMembership;
+  };
 
   console.log("Connected:", socketId);
 
@@ -66,24 +75,62 @@ io.on("connection", (socket) => {
       if (!valid)
         return socket.emit("room-error", { error: "Invalid password" });
 
+      const membership = await getMembership(roomName, decoded.id);
+      if (!membership) return socket.emit("room-error", { error: "Membership unavailable" });
+
       if (currentRoom) socket.leave(currentRoom);
       currentRoom = roomName;
+      currentUser = decoded;
+      currentMembership = membership;
       socket.join(roomName);
 
-      if (roomCodeMap.has(roomName))
-        socket.emit("code-sync", roomCodeMap.get(roomName));
+      if (roomCodeMap.has(roomName)) {
+        const roomFiles = roomCodeMap.get(roomName);
+        if (typeof roomFiles === "string") {
+          socket.emit("code-sync", { code: roomFiles, filename: "main.py" });
+        } else {
+          Object.entries(roomFiles).forEach(([filename, code]) => {
+            socket.emit("code-sync", { code, filename });
+          });
+        }
+      }
 
-      socket.emit("room-joined", { roomName });
+      socket.emit("room-joined", {
+        roomName,
+        role: membership.role,
+        canEdit: membership.can_edit,
+      });
       console.log(`${decoded.username} joined ${roomName}`);
     } catch {
       socket.emit("room-error", { error: "Join failed" });
     }
   });
 
-  socket.on("code-update", (code) => {
-    if (!currentRoom) return;
-    roomCodeMap.set(currentRoom, code);
-    socket.to(currentRoom).emit("code-sync", code);
+  socket.on("code-update", async ({ code, filename }) => {
+    await refreshMembership();
+    if (!currentRoom || !currentMembership?.can_edit) return;
+    const roomFiles = roomCodeMap.get(currentRoom) || {};
+    const previousCode = roomFiles[filename || "main.py"] || "";
+    if (currentMembership.role === "member") {
+      const ranges = await pool.query(
+        "SELECT start_line, end_line FROM room_edit_ranges WHERE room_id = $1 AND file_name = $2",
+        [currentMembership.room_id, filename]
+      );
+      const oldLines = previousCode.split("\n");
+      const newLines = code.split("\n");
+      const changedRestrictedLine = ranges.rows.some(({ start_line, end_line }) => {
+        for (let line = start_line; line <= end_line; line += 1) {
+          if (oldLines[line - 1] !== newLines[line - 1]) return true;
+        }
+        return false;
+      });
+      if (changedRestrictedLine) {
+        return socket.emit("room-error", { error: "This code block is restricted for members" });
+      }
+    }
+    roomFiles[filename || "main.py"] = code;
+    roomCodeMap.set(currentRoom, roomFiles);
+    socket.to(currentRoom).emit("code-sync", { code, filename });
   });
 
   socket.on("terminal-input", (input) => {
@@ -91,14 +138,43 @@ io.on("connection", (socket) => {
     if (info?.process) info.process.stdin.write(input + "\n");
   });
 
-  socket.on("run-code", ({ code, filename }) => {
+  socket.on("run-code", async ({ code, filename }) => {
+    await refreshMembership();
+    if (currentRoom && !currentMembership?.can_edit) return;
     runPythonCode(socket, socketId, code, filename || "main.py");
+  });
+
+  socket.on("save-label", async ({ label, filename, startLine, endLine, code }) => {
+    await refreshMembership();
+    if (!currentMembership?.can_edit) return socket.emit("room-error", { error: "Edit access required" });
+    if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,99}$/.test(label || "")) return;
+    await pool.query(
+      `INSERT INTO room_code_labels (room_id, label, file_name, start_line, end_line, code, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (room_id, label) DO UPDATE SET file_name = EXCLUDED.file_name,
+       start_line = EXCLUDED.start_line, end_line = EXCLUDED.end_line, code = EXCLUDED.code,
+       updated_at = CURRENT_TIMESTAMP`,
+      [currentMembership.room_id, label, filename, startLine, endLine, code, currentUser.id]
+    );
+    io.to(currentRoom).emit("label-saved", { label, filename, startLine, endLine, code });
+  });
+
+  socket.on("use-label", async (label) => {
+    await refreshMembership();
+    if (!currentMembership) return;
+    const result = await pool.query(
+      "SELECT label, file_name AS filename, start_line AS \"startLine\", end_line AS \"endLine\", code FROM room_code_labels WHERE room_id = $1 AND label = $2",
+      [currentMembership.room_id, label]
+    );
+    if (result.rows[0]) socket.emit("label-code", result.rows[0]);
   });
 
   socket.on("kill-process", () => killProcess(socketId));
 
   socket.on("disconnect", () => {
     killProcess(socketId);
+    currentRoom = null;
+    currentMembership = null;
     console.log("Disconnected:", socketId);
   });
 });
@@ -160,17 +236,11 @@ function runPythonCode(socket, socketId, code, filename) {
     process: proc,
     tempDir: sessionDir,
     timeout: null,
-  });
-
-  // start idle timer
-  resetIdleTimeout(socket, socketId);
-
-  activeProcesses.set(socketId, {
-    process: proc,
-    tempDir: sessionDir,
-    timeout: null,
     active: true,
   });
+
+  // Start the execution timeout after the active process record exists.
+  resetIdleTimeout(socket, socketId);
 
   proc.stdout.on("data", (d) => socket.emit("terminal-output", d.toString()));
   proc.stderr.on("data", (d) => socket.emit("terminal-output", d.toString()));
@@ -221,11 +291,19 @@ function cleanup(socketId) {
     info.timeout = null;
   }
 
-  if (info.tempDir && fs.existsSync(info.tempDir)) {
-    fs.rmSync(info.tempDir, { recursive: true, force: true });
-  }
-
   activeProcesses.delete(socketId);
+
+  if (info.tempDir) {
+    fs.rm(
+      info.tempDir,
+      { recursive: true, force: true, maxRetries: 5, retryDelay: 100 },
+      (error) => {
+        if (error) {
+          console.warn(`Temporary directory cleanup deferred: ${error.message}`);
+        }
+      }
+    );
+  }
 }
 
 /* =======================

@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 
-function CodeEditor({ code, setCode, socket }) {
+function CodeEditor({ code, setCode, socket, readOnly, onMount }) {
   const handleChange = (value) => {
     setCode(value || "");
   };
@@ -11,8 +11,10 @@ function CodeEditor({ code, setCode, socket }) {
       defaultLanguage="python"
       value={code}
       onChange={handleChange}
+      onMount={onMount}
       theme="vs-dark"
       options={{
+        readOnly,
         tabSize: 4,
         insertSpaces: true,
         detectIndentation: false,

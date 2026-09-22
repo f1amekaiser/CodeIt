@@ -1,0 +1,43 @@
+.label-manager-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 8, 14, 0.72);
+}
+
+.label-manager {
+  position: relative;
+  width: min(480px, 100%);
+  padding: 24px;
+  color: #e0e0e8;
+  background: linear-gradient(160deg, #252530, #191922);
+  border: 1px solid #3a3a48;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.label-manager-close { position: absolute; top: 12px; right: 14px; border: 0; color: #aaaabb; background: transparent; font-size: 20px; cursor: pointer; }
+.label-manager-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.label-manager-mark { color: #3cb371; font-family: "JetBrains Mono", monospace; font-weight: 700; }
+.label-manager h2 { margin: 0; font-size: 1.15rem; }
+.label-manager p { margin: 4px 0 0; color: #9292a5; font-size: 0.8rem; }
+.label-form, .label-use-section { display: grid; gap: 10px; }
+.label-form label, .label-use-section > label { display: grid; gap: 6px; color: #b9b9c8; font-size: 0.78rem; }
+.label-manager input, .label-manager select { width: 100%; min-height: 38px; padding: 8px 10px; color: #f4f4f8; background: #15151e; border: 1px solid #414153; border-radius: 7px; outline: none; }
+.label-manager input:focus, .label-manager select:focus { border-color: #3cb371; box-shadow: 0 0 0 3px rgba(60, 179, 113, 0.12); }
+.label-line-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.label-primary-button, .label-secondary-button { min-height: 38px; padding: 8px 14px; border-radius: 7px; font-weight: 600; cursor: pointer; }
+.label-primary-button { border: 0; color: #fff; background: linear-gradient(135deg, #3cb371, #2ed573); }
+.label-secondary-button { border: 1px solid #4a9ecd; color: #75bdea; background: rgba(74, 158, 205, 0.1); }
+.label-secondary-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.label-remove-action-button { min-height: 38px; padding: 8px 12px; color: #ffb0b9; background: rgba(156, 63, 77, 0.16); border: 1px solid #87404d; border-radius: 7px; font-weight: 600; cursor: pointer; }
+.label-remove-action-button:hover:not(:disabled) { background: rgba(156, 63, 77, 0.3); }
+.label-remove-action-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.label-use-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid #343442; }
+.label-use-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.label-manager-message { color: #7ee2a8 !important; }
+.label-readonly { padding: 12px; background: rgba(255, 255, 255, 0.04); border-radius: 7px; }
