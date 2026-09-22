@@ -45,19 +45,6 @@ const initDB = async () => {
         `);
 
       await pool.query(`
-          CREATE TABLE IF NOT EXISTS room_edit_ranges (
-            id SERIAL PRIMARY KEY,
-            room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
-            file_name VARCHAR(255) NOT NULL,
-            start_line INTEGER NOT NULL,
-            end_line INTEGER NOT NULL,
-            created_by INTEGER REFERENCES users(id),
-            CHECK (start_line > 0 AND end_line >= start_line),
-            UNIQUE (room_id, file_name, start_line, end_line)
-          )
-        `);
-
-      await pool.query(`
           CREATE TABLE IF NOT EXISTS room_code_labels (
             id SERIAL PRIMARY KEY,
             room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,

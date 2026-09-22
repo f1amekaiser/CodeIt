@@ -49,6 +49,7 @@ function App() {
   // Socket reference
   const socketRef = useRef(null);
   const editorRef = useRef(null);
+  const syncVersionRef = useRef({});
 
   // Initialize socket connection
   useEffect(() => {
@@ -64,9 +65,11 @@ function App() {
       socketRef.current.on("code-sync", (payload) => {
         const newCode = typeof payload === "string" ? payload : payload.code;
         const filename = typeof payload === "string" ? activeFile : payload.filename;
+        const version = typeof payload === "string" ? null : payload.version;
         if (filename && filename !== activeFile) return;
+        if (typeof version === "number" && version < (syncVersionRef.current[filename] || 0)) return;
+        if (typeof version === "number") syncVersionRef.current[filename] = version;
         setCode(newCode);
-        // Update the active file content
         setFiles((prev) =>
           prev.map((f) =>
             f.name === filename ? { ...f, content: newCode } : f
@@ -206,7 +209,9 @@ function App() {
           f.name === activeFile ? { ...f, content: newCode } : f
         )
       );
-      socketRef.current?.emit("code-update", { code: newCode, filename: activeFile });
+      const nextVersion = (syncVersionRef.current[activeFile] || 0) + 1;
+      syncVersionRef.current[activeFile] = nextVersion;
+      socketRef.current?.emit("code-update", { code: newCode, filename: activeFile, version: nextVersion });
     },
     [activeFile, currentRoom, roomPermissions.canEdit]
   );

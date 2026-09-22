@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken");
 
 const { pool, initDB } = require("./db");
 const { router: authRouter, authenticateToken } = require("./auth");
-const { router: roomsRouter, getMembership } = require("./rooms");
+const { router: roomsRouter, getMembership, getRestrictedRangesForFile } = require("./rooms");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +22,50 @@ const server = http.createServer(app);
 const EXECUTION_TIMEOUT_MS = 30000; // 30s wall time
 const MAX_CPU_SECONDS = 2; // CPU time
 const MAX_MEMORY_KB = 256 * 1024; // 256MB RAM
+
+function resolvePythonCommand() {
+  const configured = process.env.PYTHON_COMMAND || process.env.PYTHON || process.env.PYTHON_BIN;
+  if (configured && configured.trim()) return configured.trim();
+
+  const candidates = process.platform === "win32"
+    ? ["py", "python", "python3"]
+    : ["python3", "python"];
+
+  for (const candidate of candidates) {
+    try {
+      const command = process.platform === "win32"
+        ? "where"
+        : "which";
+
+      const result = require("child_process").execFileSync(command, [candidate], {
+        stdio: ["ignore", "pipe", "pipe"],
+        env: process.env,
+      });
+
+      if (result && result.toString().trim()) return candidate;
+    } catch {}
+  }
+
+  return process.platform === "win32" ? "python" : "python3";
+}
+
+function buildPythonArgs(pythonCommand, filePath) {
+  if (process.platform === "win32" && pythonCommand.toLowerCase() === "py") {
+    return ["-3", "-I", "-u", filePath];
+  }
+  return ["-I", "-u", filePath];
+}
+
+function sanitizeFilename(filename) {
+  const safeName = typeof filename === "string" ? filename : "main.py";
+  const fileName = safeName
+    .replace(/\\/g, "/")
+    .split(/[\/]+/)
+    .filter(Boolean)
+    .pop();
+
+  return fileName && fileName.trim() ? fileName.trim() : "main.py";
+}
 
 /* =======================
    SOCKET SETUP
@@ -37,6 +81,7 @@ const io = new Server(server, {
    STATE
 ======================= */
 const roomCodeMap = new Map();
+const roomSyncVersions = new Map();
 const activeProcesses = new Map();
 
 const tempRoot = path.join(__dirname, "temp");
@@ -86,11 +131,12 @@ io.on("connection", (socket) => {
 
       if (roomCodeMap.has(roomName)) {
         const roomFiles = roomCodeMap.get(roomName);
+        const roomVersions = roomSyncVersions.get(roomName) || {};
         if (typeof roomFiles === "string") {
-          socket.emit("code-sync", { code: roomFiles, filename: "main.py" });
+          socket.emit("code-sync", { code: roomFiles, filename: "main.py", version: roomVersions["main.py"] || 0 });
         } else {
           Object.entries(roomFiles).forEach(([filename, code]) => {
-            socket.emit("code-sync", { code, filename });
+            socket.emit("code-sync", { code, filename, version: roomVersions[filename] || 0 });
           });
         }
       }
@@ -106,20 +152,20 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("code-update", async ({ code, filename }) => {
+  socket.on("code-update", async ({ code, filename, version }) => {
     await refreshMembership();
     if (!currentRoom || !currentMembership?.can_edit) return;
+
+    const safeFilename = sanitizeFilename(filename || "main.py");
     const roomFiles = roomCodeMap.get(currentRoom) || {};
-    const previousCode = roomFiles[filename || "main.py"] || "";
+    const roomVersions = roomSyncVersions.get(currentRoom) || {};
+    const previousCode = roomFiles[safeFilename] || "";
     if (currentMembership.role === "member") {
-      const ranges = await pool.query(
-        "SELECT start_line, end_line FROM room_edit_ranges WHERE room_id = $1 AND file_name = $2",
-        [currentMembership.room_id, filename]
-      );
+      const ranges = getRestrictedRangesForFile(currentMembership.room_id, safeFilename);
       const oldLines = previousCode.split("\n");
       const newLines = code.split("\n");
-      const changedRestrictedLine = ranges.rows.some(({ start_line, end_line }) => {
-        for (let line = start_line; line <= end_line; line += 1) {
+      const changedRestrictedLine = ranges.some(({ startLine, endLine }) => {
+        for (let line = startLine; line <= endLine; line += 1) {
           if (oldLines[line - 1] !== newLines[line - 1]) return true;
         }
         return false;
@@ -128,9 +174,17 @@ io.on("connection", (socket) => {
         return socket.emit("room-error", { error: "This code block is restricted for members" });
       }
     }
-    roomFiles[filename || "main.py"] = code;
+
+    const nextVersion = typeof version === "number" ? version : (roomVersions[safeFilename] || 0) + 1;
+    if (typeof version === "number" && version < (roomVersions[safeFilename] || 0)) {
+      return;
+    }
+
+    roomVersions[safeFilename] = nextVersion;
+    roomSyncVersions.set(currentRoom, roomVersions);
+    roomFiles[safeFilename] = code;
     roomCodeMap.set(currentRoom, roomFiles);
-    socket.to(currentRoom).emit("code-sync", { code, filename });
+    socket.to(currentRoom).emit("code-sync", { code, filename: safeFilename, version: nextVersion });
   });
 
   socket.on("terminal-input", (input) => {
@@ -141,7 +195,7 @@ io.on("connection", (socket) => {
   socket.on("run-code", async ({ code, filename }) => {
     await refreshMembership();
     if (currentRoom && !currentMembership?.can_edit) return;
-    runPythonCode(socket, socketId, code, filename || "main.py");
+    runPythonCode(socket, socketId, code, sanitizeFilename(filename || "main.py"));
   });
 
   socket.on("save-label", async ({ label, filename, startLine, endLine, code }) => {
@@ -210,26 +264,25 @@ function resetIdleTimeout(socket, socketId) {
 function runPythonCode(socket, socketId, code, filename) {
   killProcess(socketId);
 
+  const safeFilename = sanitizeFilename(filename || "main.py");
   const sessionDir = path.join(tempRoot, socketId.replace(/[^a-zA-Z0-9]/g, ""));
   fs.mkdirSync(sessionDir, { recursive: true });
 
-  const filePath = path.join(sessionDir, filename);
+  const filePath = path.join(sessionDir, safeFilename);
   fs.writeFileSync(filePath, code, "utf8");
 
-  socket.emit("terminal-output", `>>> python ${filename}\n`);
+  const pythonCommand = resolvePythonCommand();
+  const pythonArgs = buildPythonArgs(pythonCommand, filePath);
+  socket.emit("terminal-output", `>>> ${pythonCommand} ${safeFilename}\n`);
 
-  const command = `
-    ulimit -t ${MAX_CPU_SECONDS} &&
-    ulimit -v ${MAX_MEMORY_KB} &&
-    python -I -u "${filePath}"
-  `;
-
-  const proc = spawn("bash", ["-c", command], {
+  const proc = spawn(pythonCommand, pythonArgs, {
     cwd: sessionDir,
     env: {
-      PATH: process.env.PATH,
+      ...process.env,
+      PATH: process.env.PATH || "C:\\Windows\\System32;C:\\Python310;C:\\Python311",
       PYTHONUNBUFFERED: "1",
     },
+    shell: process.platform === "win32",
   });
 
   activeProcesses.set(socketId, {
@@ -336,11 +389,21 @@ app.post("/api/load", authenticateToken, (req, res) => {
 ======================= */
 const PORT = process.env.PORT || 5000;
 
-initDB()
-  .then(() => {
-    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => {
-    console.error("DB init failed:", err);
-    process.exit(1);
-  });
+if (require.main === module) {
+  initDB()
+    .then(() => {
+      server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch((err) => {
+      console.error("DB init failed:", err);
+      process.exit(1);
+    });
+}
+
+module.exports = {
+  app,
+  server,
+  resolvePythonCommand,
+  sanitizeFilename,
+  runPythonCode,
+};

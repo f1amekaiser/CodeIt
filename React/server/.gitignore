@@ -9,3 +9,4 @@ build/
 dist/
 client/build/
 client/dist/
+*.test.*

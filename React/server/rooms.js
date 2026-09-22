@@ -139,6 +139,8 @@ router.get("/exists/:roomName", authenticateToken, async (req, res) => {
   }
 });
 
+const roomEditRestrictions = new Map();
+
 const getMembership = async (roomName, userId) => {
   const result = await pool.query(
     `SELECT r.id AS room_id, r.name, r.created_by, rm.role, rm.can_edit
@@ -148,6 +150,56 @@ const getMembership = async (roomName, userId) => {
     [roomName, userId]
   );
   return result.rows[0] || null;
+};
+
+const getRestrictedRangesForFile = (roomId, fileName) => {
+  const roomRestrictions = roomEditRestrictions.get(roomId);
+  if (!roomRestrictions) return [];
+  return roomRestrictions.get(fileName) || [];
+};
+
+const setRestrictedRange = (roomId, fileName, startLine, endLine, createdBy) => {
+  const roomRestrictions = roomEditRestrictions.get(roomId) || new Map();
+  const ranges = roomRestrictions.get(fileName) || [];
+  const existing = ranges.find((range) => range.startLine === startLine && range.endLine === endLine);
+  if (existing) return existing;
+
+  const range = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    fileName,
+    startLine,
+    endLine,
+    createdBy,
+  };
+
+  ranges.push(range);
+  roomRestrictions.set(fileName, ranges);
+  roomEditRestrictions.set(roomId, roomRestrictions);
+  return range;
+};
+
+const removeRestrictedRange = (roomId, rangeId) => {
+  const roomRestrictions = roomEditRestrictions.get(roomId);
+  if (!roomRestrictions) return false;
+
+  let removed = false;
+  for (const [fileName, ranges] of roomRestrictions.entries()) {
+    const nextRanges = ranges.filter((range) => range.id !== rangeId);
+    if (nextRanges.length !== ranges.length) removed = true;
+
+    if (nextRanges.length) {
+      roomRestrictions.set(fileName, nextRanges);
+    } else {
+      roomRestrictions.delete(fileName);
+    }
+  }
+
+  if (roomRestrictions.size === 0) roomEditRestrictions.delete(roomId);
+  return removed;
+};
+
+const clearRoomRestrictions = (roomId) => {
+  roomEditRestrictions.delete(roomId);
 };
 
 const requireRoomManager = async (req, res, next) => {
@@ -211,6 +263,7 @@ router.delete("/:roomName/members/:userId", authenticateToken, requireRoomManage
 router.delete("/:roomName", authenticateToken, requireRoomManager, async (req, res) => {
   if (req.membership.role !== "owner") return res.status(403).json({ error: "Only the owner can delete a room" });
   await pool.query("DELETE FROM rooms WHERE id = $1", [req.membership.room_id]);
+  clearRoomRestrictions(req.membership.room_id);
   res.json({ message: "Room deleted" });
 });
 
@@ -219,19 +272,21 @@ router.post("/:roomName/edit-ranges", authenticateToken, requireRoomManager, asy
   if (!fileName || !Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 1 || endLine < startLine) {
     return res.status(400).json({ error: "Valid fileName, startLine, and endLine are required" });
   }
-  const result = await pool.query(
-    `INSERT INTO room_edit_ranges (room_id, file_name, start_line, end_line, created_by)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (room_id, file_name, start_line, end_line)
-     DO UPDATE SET created_by = EXCLUDED.created_by
-     RETURNING id, file_name AS "fileName", start_line AS "startLine", end_line AS "endLine"`,
-    [req.membership.room_id, fileName, startLine, endLine, req.user.id]
-  );
-  res.status(201).json({ range: result.rows[0] });
+
+  const range = setRestrictedRange(req.membership.room_id, fileName, startLine, endLine, req.user.id);
+  res.status(201).json({
+    range: {
+      id: range.id,
+      fileName: range.fileName,
+      startLine: range.startLine,
+      endLine: range.endLine,
+    },
+  });
 });
 
 router.delete("/:roomName/edit-ranges/:rangeId", authenticateToken, requireRoomManager, async (req, res) => {
-  await pool.query("DELETE FROM room_edit_ranges WHERE id = $1 AND room_id = $2", [req.params.rangeId, req.membership.room_id]);
+  const removed = removeRestrictedRange(req.membership.room_id, req.params.rangeId);
+  if (!removed) return res.status(404).json({ error: "Edit restriction not found" });
   res.json({ message: "Edit restriction removed" });
 });
 
@@ -279,4 +334,11 @@ router.delete("/:roomName/labels/:label", authenticateToken, async (req, res) =>
   res.json({ message: "Label removed", label: result.rows[0].label });
 });
 
-module.exports = { router, getMembership };
+module.exports = {
+  router,
+  getMembership,
+  getRestrictedRangesForFile,
+  setRestrictedRange,
+  removeRestrictedRange,
+  clearRoomRestrictions,
+};
